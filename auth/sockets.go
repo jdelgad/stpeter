@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/golang/protobuf/proto"
 	"github.com/jdelgad/stpeter/protos"
-	"github.com/jdelgad/goforum/transport"
+	"github.com/jdelgad/transport"
 )
 
 func SetupServerSocket(address string) *transport.ServerSocket {

@@ -3,11 +3,11 @@
 package main
 
 import (
-	"errors"
 	"crypto/rand"
+	"errors"
 	"io"
-	"log"
 	"io/ioutil"
+	"log"
 	"os"
 )
 
