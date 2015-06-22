@@ -1,12 +1,12 @@
-package authenticator
+package auth
 
 import (
+	"bytes"
 	"encoding/csv"
 	"errors"
 	"golang.org/x/crypto/scrypt"
 	"io/ioutil"
 	"os"
-	"bytes"
 )
 
 type User struct {
@@ -68,15 +68,15 @@ func getUserPasswordList(file string) (map[string]User, error) {
 		userInfo := User{
 			Username: username,
 			Password: []byte(password),
-			Role: role}
+			Role:     role}
 		userPass[username] = userInfo
 	}
 
 	return userPass, nil
 }
 
-func IsRegisteredUser(u string) (bool, error) {
-	users, err := getUserPasswordList("passwd")
+func IsRegisteredUser(u, f string) (bool, error) {
+	users, err := getUserPasswordList(f)
 
 	if err != nil {
 		return false, errors.New("could not read user password list")
@@ -87,20 +87,20 @@ func IsRegisteredUser(u string) (bool, error) {
 	return ok, nil
 }
 
-func IsValidUserPass(u string, p []byte) (bool, error) {
-	r, err := IsRegisteredUser(u)
+func IsValidUserPass(u string, p []byte, f, sf string) (bool, error) {
+	r, err := IsRegisteredUser(u, f)
 
 	if err != nil {
 		return false, errors.New("user is not registered")
 	}
 
-	pass, err := getPassword(u)
+	pass, err := getPassword(u, f)
 
 	if err != nil {
 		return false, errors.New("password does not exist")
 	}
 
-	enc_pass, err := EncryptPassword(p)
+	enc_pass, err := EncryptPassword(p, sf)
 	if err != nil {
 		return false, errors.New("password could not be encrypted")
 	}
@@ -108,8 +108,8 @@ func IsValidUserPass(u string, p []byte) (bool, error) {
 	return r && bytes.Equal(enc_pass, pass), nil
 }
 
-func EncryptPassword(p []byte) ([]byte, error) {
-	s, err := getSalt("salt")
+func EncryptPassword(p []byte, sf string) ([]byte, error) {
+	s, err := getSalt(sf)
 	if err != nil {
 		return nil, errors.New("could not read salt file")
 	}
@@ -121,8 +121,8 @@ func getSalt(f string) ([]byte, error) {
 	return ioutil.ReadFile(f)
 }
 
-func getPassword(u string) ([]byte, error) {
-	users, err := getUserPasswordList("passwd")
+func getPassword(u, f string) ([]byte, error) {
+	users, err := getUserPasswordList(f)
 
 	if err != nil {
 		return nil, errors.New("could not retrieve user password")
@@ -176,8 +176,8 @@ func IsLoggedIn(name string, session Session) bool {
 	return session.user.Username == name && session.active
 }
 
-func IsValidNewUsername(name string) (bool, error) {
-	users, err := getUserPasswordList("passwd")
+func IsValidNewUsername(name, f string) (bool, error) {
+	users, err := getUserPasswordList(f)
 
 	if err != nil {
 		return false, errors.New("could not get list of registered users")
@@ -192,13 +192,13 @@ func IsValidNewUsername(name string) (bool, error) {
 	return true, nil
 }
 
-func RegisterUser(name string, pw []byte) error {
-	users, err := getUserPasswordList("passwd")
+func RegisterUser(name string, pw []byte, f, sf string) error {
+	users, err := getUserPasswordList(f)
 	if err != nil {
 		return errors.New("could not read user list")
 	}
 
-	enc_pass, err := EncryptPassword(pw)
+	enc_pass, err := EncryptPassword(pw, sf)
 	if err != nil {
 		return errors.New("could not encrypt user password")
 	}
@@ -210,25 +210,25 @@ func RegisterUser(name string, pw []byte) error {
 
 	users[name] = user
 
-	err = updateUserList(users)
+	err = updateUserList(f, users)
 	return err
 }
 
-func updateUserList(users map[string]User) error {
-	err := os.Remove("passwd")
+func updateUserList(f string, users map[string]User) error {
+	err := os.Remove(f)
 
 	if err != nil {
 		return errors.New("could not remove password file")
 	}
 
-	f, err := os.OpenFile("passwd", os.O_WRONLY|os.O_CREATE, 0600)
+	pwf, err := os.OpenFile(f, os.O_WRONLY|os.O_CREATE, 0600)
 
 	if err != nil {
 		return errors.New("could not open password file")
 	}
-	defer f.Close()
+	defer pwf.Close()
 
-	w := csv.NewWriter(f)
+	w := csv.NewWriter(pwf)
 
 	records := make([][]string, 0)
 	for _, info := range users {
@@ -248,8 +248,8 @@ func updateUserList(users map[string]User) error {
 	return nil
 }
 
-func DeleteUser(user string) error {
-	users, err := getUserPasswordList("passwd")
+func DeleteUser(user, f string) error {
+	users, err := getUserPasswordList(f)
 
 	if err != nil {
 		return errors.New("could not open user list")
@@ -263,7 +263,7 @@ func DeleteUser(user string) error {
 
 	delete(users, user)
 
-	err = updateUserList(users)
+	err = updateUserList(f, users)
 
 	return err
 }

@@ -4,7 +4,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/jdelgad/goforum/authenticator"
+	"github.com/jdelgad/stpeter/auth"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -18,6 +18,6 @@ func main() {
 		panic("Could not obtain password")
 	}
 
-	pp, err := authenticator.EncryptPassword(p)
+	pp, err := auth.EncryptPassword(p)
 	fmt.Println(pp)
 }

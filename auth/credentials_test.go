@@ -1,4 +1,4 @@
-package authenticator
+package auth
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -13,7 +13,7 @@ func TestBadCSVPasswordFile(t *testing.T) {
 
 func TestPasswordFile(t *testing.T) {
 	users, err := getUserPasswordList("test_files/passwd")
-	assert.Len(t, users, 3)
+	assert.Len(t, users, 2)
 	assert.NoError(t, err)
 }
 
@@ -24,30 +24,30 @@ func TestInvalidPasswordFile(t *testing.T) {
 }
 
 func TestGetInvalidUserPassword(t *testing.T) {
-	p, err := getPassword("nonuser")
+	p, err := getPassword("nonuser", "test_files/passwd")
 	assert.Empty(t, p)
 	assert.Error(t, err)
 }
 
 func TestPasswordFileExistsCantRead(t *testing.T) {
-	f, err := os.Create("badpasswd")
+	f, err := os.Create("test_files/badpasswd")
 	assert.NoError(t, err)
 
 	f.Chmod(0200)
-	_, err = getUserPasswordList("badpasswd")
+	_, err = getUserPasswordList("test_files/badpasswd")
 
 	assert.Error(t, err)
-	os.Remove("badpasswd")
+	os.Remove("test_files/badpasswd")
 }
 
 func TestPasswordFailureNoUser(t *testing.T) {
-	v, err := IsValidUserPass("nouser", []byte("testing"))
+	v, err := IsValidUserPass("nouser", []byte("testing"), "test_files/passwd", "test_files/salt")
 	assert.False(t, v)
 	assert.Error(t, err)
 }
 
 func TestPasswordFailure(t *testing.T) {
-	v, err := IsValidUserPass("user", []byte("testing"))
+	v, err := IsValidUserPass("user", []byte("testing"), "test_files/passwd", "test_files/salt")
 	assert.False(t, v)
 	assert.Error(t, err)
 }
@@ -59,19 +59,19 @@ func TestPasswordSuccess(t *testing.T) {
 }
 
 func TestUsernameFailure(t *testing.T) {
-	v, err := IsRegisteredUser("fakeUser")
+	v, err := IsRegisteredUser("fakeUser", "test_files/passwd")
 	assert.False(t, v)
 	assert.NoError(t, err)
 }
 
 func TestUsernameSuccess(t *testing.T) {
-	v, err := IsRegisteredUser("jdelgad")
+	v, err := IsRegisteredUser("jdelgad", "test_files/passwd")
 	assert.True(t, v)
 	assert.NoError(t, err)
 }
 
 func TestPasswordFileDoesNotExist(t *testing.T) {
-	users, err := getUserPasswordList("fakePasswd")
+	users, err := getUserPasswordList("test_files/fakePasswd")
 	assert.Nil(t, users)
 	assert.Error(t, err)
 }
@@ -83,7 +83,7 @@ func TestBlankPasswordFile(t *testing.T) {
 }
 
 func TestOpenPasswordFile(t *testing.T) {
-	users, err := getUserPasswordList("passwd")
+	users, err := getUserPasswordList("test_files/passwd")
 	assert.NotEmpty(t, users)
 	assert.Equal(t, len(users), 2)
 	assert.NoError(t, err)
@@ -96,7 +96,7 @@ func TestOpenPasswordFile(t *testing.T) {
 }
 
 func TestAuthenticate(t *testing.T) {
-	users, err := getUserPasswordList("passwd")
+	users, err := getUserPasswordList("test_files/passwd")
 	assert.NoError(t, err)
 
 	for name, user := range users {
@@ -109,7 +109,7 @@ func TestAuthenticate(t *testing.T) {
 }
 
 func TestRegularUser(t *testing.T) {
-	users, err := getUserPasswordList("passwd")
+	users, err := getUserPasswordList("test_files/passwd")
 	assert.NoError(t, err)
 
 	v, err := IsRegularUser("jdelgad", users)
@@ -126,7 +126,7 @@ func TestRegularUser(t *testing.T) {
 }
 
 func TestAdminUser(t *testing.T) {
-	users, err := getUserPasswordList("passwd")
+	users, err := getUserPasswordList("test_files/passwd")
 	assert.NoError(t, err)
 
 	v, err := IsAdminUser("jdelgad", users)
@@ -143,7 +143,7 @@ func TestAdminUser(t *testing.T) {
 }
 
 func TestIsLoggedIn(t *testing.T) {
-	users, err := getUserPasswordList("passwd")
+	users, err := getUserPasswordList("test_files/passwd")
 	assert.NoError(t, err)
 
 	session, err := OpenSession("jdelgad", []byte("pass"), users)
@@ -162,7 +162,7 @@ func TestIsLoggedIn(t *testing.T) {
 }
 
 func TestCloseSessionOnBadPassword(t *testing.T) {
-	users, err := getUserPasswordList("passwd")
+	users, err := getUserPasswordList("test_files/passwd")
 	assert.NoError(t, err)
 	s, err := OpenSession("jdelgad", []byte("badpass"), users)
 	assert.NoError(t, err)
@@ -171,31 +171,32 @@ func TestCloseSessionOnBadPassword(t *testing.T) {
 }
 
 func TestCreateUser(t *testing.T) {
-	v, err := IsValidNewUsername("newestUser")
+	v, err := IsValidNewUsername("newestUser", "test_files/passwd")
 	assert.True(t, v)
 	assert.NoError(t, err)
 
-	v, err = IsValidNewUsername("jdelgad")
+	v, err = IsValidNewUsername("jdelgad", "test_files/passwd")
 	assert.False(t, v)
 	assert.Error(t, err)
 }
 
 func TestRegisterUser(t *testing.T) {
-	RegisterUser("newestUser", []byte("password"))
+	RegisterUser("newestUser", []byte("password"), "test_files/passwd", "test_files/salt")
 
-	v, err := IsRegisteredUser("newestUser")
+	v, err := IsRegisteredUser("newestUser", "test_files/passwd")
 
 	assert.True(t, v)
 	assert.NoError(t, err)
 }
 
 func TestDeleteUser(t *testing.T) {
-	RegisterUser("newestUser", []byte("pass3"))
-	err := DeleteUser("newestUser")
-
+	err := RegisterUser("newestUser", []byte("pass3"), "test_files/passwd", "test_files/salt")
 	assert.NoError(t, err)
 
-	users, err := getUserPasswordList("passwd")
+	err = DeleteUser("newestUser", "test_files/passwd")
+	assert.NoError(t, err)
+
+	users, err := getUserPasswordList("test_files/passwd")
 	assert.NotNil(t, users)
 	assert.NoError(t, err)
 
@@ -204,7 +205,7 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestEncryptPassword(t *testing.T) {
-	p, err := EncryptPassword([]byte("testing"))
+	p, err := EncryptPassword([]byte("testing"), "test_files/salt")
 	assert.NoError(t, err)
 	assert.NotNil(t, p)
 }

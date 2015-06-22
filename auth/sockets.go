@@ -1,9 +1,9 @@
-package authenticator
+package auth
 
 import (
 	"errors"
 	"github.com/golang/protobuf/proto"
-	"github.com/jdelgad/goforum/protos"
+	"github.com/jdelgad/stpeter/protos"
 	"github.com/jdelgad/goforum/transport"
 )
 
@@ -40,8 +40,8 @@ func parseLoginRequest(b []byte) (*protos.Login, error) {
 	return login, nil
 }
 
-func isValidLogin(l protos.Login) (bool, error) {
-	return IsValidUserPass(*l.Username, l.Password)
+func isValidLogin(l protos.Login, f, sf string) (bool, error) {
+	return IsValidUserPass(*l.Username, l.Password, f, sf)
 }
 
 func authFailure(r *protos.LoginReply) {
@@ -99,7 +99,7 @@ func ServiceLoginReply(s *transport.ClientSocket) (bool, error) {
 	return success, nil
 }
 
-func ServiceLoginRequests(s *transport.ServerSocket) error {
+func ServiceLoginRequests(s *transport.ServerSocket, f, sf string) error {
 	for {
 		b, err := s.Receive()
 
@@ -114,7 +114,7 @@ func ServiceLoginRequests(s *transport.ServerSocket) error {
 			authFailure(r)
 		} else {
 
-			v, err := isValidLogin(*l)
+			v, err := isValidLogin(*l, f, sf)
 
 			if err != nil {
 				return errors.New("cannot determine if username/pass is valid")
