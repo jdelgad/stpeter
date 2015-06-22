@@ -1,0 +1,6 @@
+package protos;
+
+message Login {
+    optional string username = 1;
+    optional bytes password = 2;
+}

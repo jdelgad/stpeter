@@ -1,0 +1,11 @@
+package protos;
+
+message LoginReply {
+    enum Authorized {
+        SUCCESSFUL = 0;
+        FAILED = 1;
+    }
+
+    optional Authorized authorized = 1;
+    optional string sessionID = 2;
+}
