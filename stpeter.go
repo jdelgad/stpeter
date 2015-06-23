@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/jdelgad/stpeter/auth"
+	"github.com/nightshaders/stpeter/auth"
 )
 
 func main() {
