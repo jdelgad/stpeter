@@ -3,8 +3,8 @@ package auth
 import (
 	"errors"
 	"github.com/golang/protobuf/proto"
-	"github.com/jdelgad/stpeter/protos"
-	"github.com/jdelgad/transport"
+	"github.com/nightshaders/stpeter/protos"
+	"github.com/nightshaders/transport"
 )
 
 func SetupServerSocket(address string) *transport.ServerSocket {

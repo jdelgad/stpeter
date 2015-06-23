@@ -4,7 +4,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/jdelgad/stpeter/auth"
+	"github.com/nightshaders/stpeter/auth"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
